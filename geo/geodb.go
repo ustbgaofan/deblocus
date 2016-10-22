@@ -15,7 +15,6 @@ func buildGeoDB() ([]byte, []byte, []byte) {
 	return decompress(db0, lens[0]), decompress(db1, lens[1]), db2
 }
 
-
 func decompress(b []byte, lens int) []byte {
 	zr, e := zlib.NewReader(bytes.NewReader(b))
 	if e != nil {
