@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -13,6 +14,7 @@ import (
 	log "github.com/Lafeng/deblocus/glog"
 	. "github.com/Lafeng/deblocus/tunnel"
 	"github.com/codegangsta/cli"
+	"github.com/cratonica/trayhost"
 )
 
 var (
@@ -121,7 +123,8 @@ func (ctx *bootContext) startCommandHandler(c *cli.Context) error {
 	if role&SR_CLIENT != 0 {
 		go ctx.startClient()
 	}
-	waitSignal()
+
+	runMainThread()
 	return nil
 }
 
@@ -227,6 +230,28 @@ func getOutputArg(c *cli.Context) string {
 		output += ".ini"
 	}
 	return output
+}
+
+func runMainThread() {
+	var hasGUI bool
+	switch runtime.GOOS {
+	case "darwin":
+		fallthrough
+	case "windows":
+		hasGUI = true
+	}
+
+	if hasGUI {
+		runGUIMainThread()
+	} else {
+		waitSignal()
+	}
+}
+
+func runGUIMainThread() {
+	runtime.LockOSThread()
+	trayhost.SetUrl("http://localhost:9009")
+	trayhost.EnterLoop(app_name, iconData)
 }
 
 func waitSignal() {
