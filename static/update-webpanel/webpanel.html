@@ -4,19 +4,15 @@
     <meta charset="utf-8"/>
     <title>deblocus</title>
     <style type="text/css">
-        body {
+        html, body {
             font-family: Arial, sans-serif;
+            width: 100%;
+            height: 100%;
+            position: relative;
         }
 
         html, body, h1, h2, h3 {
             margin: 0;
-        }
-
-        .container {
-            margin: 0 auto;
-            max-width: 850px;
-            padding: 0 30px;
-            width: 90%;
         }
 
         .header-container {
@@ -24,7 +20,7 @@
             line-height: 5em;
             position: relative;
             border-bottom: 1px solid #eee;
-            margin-bottom: 2em;
+            margin-bottom: 1em;
         }
 
         .version-container {
@@ -35,25 +31,78 @@
             right: 2em;
         }
 
-        .status-container {
+        .container {
+            font-size: 0.75em;
+            position: absolute;
+            margin: 0 4px 4px 4px;
+            top: 8em;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        .left-container {
             line-height: 2.5em;
+            position: absolute;
+            width: 24em;
+            left: 0;
+            top: 0;
+        }
+
+        .right-container {
+            position: absolute;
+            left: 24em;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            min-width: 60em;
+            min-height: 20em;
+        }
+
+        #log-window {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            border: solid 1px #aaa;
+            overflow: auto;
+            font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+        }
+
+        #log-window p {
+            padding: 0;
+            margin: 2px;
+            word-break: break-all;
+        }
+
+        .left-container span {
+            display: block;
+            font-weight: normal;
+            text-indent: 2em;
         }
 
         span.field {
-            display: inline-block;
-            width: 12em;
+            text-indent: 0;
+            font-weight: bold;
+        }
+
+        span.warn {
+            color: red;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header-container">
-        <h1>deblocus client</h1>
-        <div class="version-container">
-            {{.Version}}
-        </div>
+
+<div class="header-container">
+    <h1>deblocus client</h1>
+    <div class="version-container">
+        {{.Version}}
     </div>
-    <div class="status-container">
+</div>
+
+<div class="container">
+    <div class="left-container">
         <div class="status-line">
             <span class="field">Start Time:</span>
             <span>{{.StartTime}}</span>
@@ -75,6 +124,65 @@
             <span>{{.Round}}</span>
         </div>
     </div>
+    <div class="right-container">
+        <div id="log-window"></div>
+    </div>
 </div>
+<script language="javascript" type="text/javascript">
+
+    var output;
+
+    var W_PREFIX = '<span class="warn">ERROR: </span>';
+
+    function init() {
+        var wsUri = "ws://127.0.0.1:9009/log";
+        output = document.getElementById("log-window");
+        new WSClient(wsUri);
+    }
+
+    function WSClient(url) {
+        this.url = url;
+        var so = new WebSocket(url);
+        so.onopen = this.onOpen;
+        so.onclose = this.onClose;
+        so.onmessage = this.onMessage;
+        so.onerror = this.onError;
+        this.so = so;
+        this.status = 0;
+    }
+
+    WSClient.prototype.onOpen = function (evt) {
+        this.status = 0xff;
+    };
+
+    WSClient.prototype.onClose = function (evt) {
+        this.status = 1;
+        writeToScreen(W_PREFIX + "DISCONNECTED");
+    };
+
+    WSClient.prototype.onMessage = function (evt) {
+        writeToScreen(evt.data);
+    };
+
+    WSClient.prototype.onError = function (evt) {
+        if (evt && evt.data) writeToScreen(W_PREFIX + evt.data);
+        this.so && this.so.close();
+    };
+
+    function doSend(message) {
+        writeToScreen("SENT: " + message);
+        websocket.send(message);
+    }
+
+    function writeToScreen(message) {
+        var p = document.createElement("p");
+        p.innerHTML = message;
+        output.appendChild(p);
+        output.scrollTop = output.scrollHeight;
+    }
+
+    window.addEventListener("load", init, false);
+</script>
+
 </body>
 </html>

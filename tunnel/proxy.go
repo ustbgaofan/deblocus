@@ -193,19 +193,26 @@ func detectProtocol(pbconn *pushbackInputStream) (int, error) {
 	}
 }
 
-func httpProxyHandshake(conn *pushbackInputStream) (proto int, target string, err error) {
+type t_httpReq struct {
+	req    *http.Request
+	proto  int
+	target string
+}
+
+func httpProxyHandshake(conn *pushbackInputStream) (httpReq t_httpReq, err error) {
 	var req *http.Request
 	reader := bufio.NewReader(conn)
 	setRTimeout(conn)
 	req, err = http.ReadRequest(reader)
+	httpReq.req = req
 	if err != nil {
 		return
 	}
 
 	// http tunnel, direct into tunnel
 	if req.Method == "CONNECT" {
-		proto = PROT_HTTP_T
-		target = req.Host
+		httpReq.proto = PROT_HTTP_T
+		httpReq.target = req.Host
 
 		// response http header
 		setWTimeout(conn)
@@ -219,13 +226,13 @@ func httpProxyHandshake(conn *pushbackInputStream) (proto int, target string, er
 		// sure this is local static request
 		// req.RequestURI.length >= 1
 		if req.Method == "GET" && req.RequestURI[0] == '/' {
-			proto = PROT_LOCAL
-			target = req.RequestURI
+			httpReq.proto = PROT_LOCAL
+			httpReq.target = req.URL.Path
 			return
 
 		} else { // plain http proxy request
-			proto = PROT_HTTP
-			target = req.Host
+			httpReq.proto = PROT_HTTP
+			httpReq.target = req.Host
 
 			// delete http header Proxy-xxx
 			for k, _ := range req.Header {
@@ -241,20 +248,20 @@ func httpProxyHandshake(conn *pushbackInputStream) (proto int, target string, er
 		}
 	}
 
-	if target == NULL {
+	if httpReq.target == NULL {
 		err = errors.New("missing host in address")
 		return
 	}
 
-	_, _, err = net.SplitHostPort(target)
+	_, _, err = net.SplitHostPort(httpReq.target)
 	if err != nil {
 		// plain http request: the header.Host without port
 		if strings.Contains(err.Error(), "missing port") {
 			err = nil
 			if req.Method == "CONNECT" {
-				target += ":443"
+				httpReq.target += ":443"
 			} else {
-				target += ":80"
+				httpReq.target += ":80"
 			}
 		} else {
 			return
@@ -271,11 +278,11 @@ func openReadOnlyFile(file string) (f *os.File, info os.FileInfo, err error) {
 	return
 }
 
-func (c *Client) localServlet(conn net.Conn, reqUri string) {
+func (c *Client) localServlet(conn net.Conn, httpReq t_httpReq) {
 	initTplOnce.Do(lazyInitTemplate)
 	defer conn.Close()
 
-	switch reqUri {
+	switch httpReq.target {
 	case "/wpad.dat":
 		if c.connInfo.pacFile != NULL { // has pac setting
 			pacFile, info, err := openReadOnlyFile(c.connInfo.pacFile)
@@ -292,6 +299,11 @@ func (c *Client) localServlet(conn net.Conn, reqUri string) {
 			writeHttpResponse(conn, 200, &entity)
 			return
 		}
+
+	case "/log":
+		wsHandler(conn, httpReq.req)
+		return
+
 	case "/":
 		writeHttpResponse(conn, 200, c.renderPage("main"))
 		return
@@ -299,7 +311,7 @@ func (c *Client) localServlet(conn net.Conn, reqUri string) {
 
 error404:
 	// other local request or pacFile not specified
-	log.Warningln("Unrecognized Request", reqUri)
+	log.Warningln("Unrecognized Request", httpReq.target)
 	// respond 404
 	writeHttpResponse(conn, 404, c.renderPage("404"))
 }

@@ -27,6 +27,18 @@
 			"revisionTime": "2016-07-08T17:31:50Z"
 		},
 		{
+			"checksumSHA1": "B4bk7vdV9aD7AhrtATXfgEacdqE=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "3ab3a8b8831546bd18fd182c20687ca853b2bb13",
+			"revisionTime": "2016-12-15T22:53:35Z"
+		},
+		{
+			"checksumSHA1": "uxdfA/xMBbIZ89WdzjeDYM2N8Gw=",
+			"path": "github.com/imkira/go-observer",
+			"revision": "2b5c0039075a41408f1a33aa6391bd77d3e5a132",
+			"revisionTime": "2016-09-18T09:16:08Z"
+		},
+		{
 			"checksumSHA1": "6nmAJBw2phU9MUmkUnqFvbO5urg=",
 			"path": "github.com/kardianos/osext",
 			"revision": "29ae4ffbc9a6fe9fb2bc5029050ce6996ea1d3bc",

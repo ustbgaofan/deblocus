@@ -198,28 +198,31 @@ func (c *Client) ClientServe(conn net.Conn) {
 				done = true
 			}
 		}
+
 	case PROT_HTTP:
-		proto, target, err := httpProxyHandshake(pbConn)
+		httpReq, err := httpProxyHandshake(pbConn)
 		if err != nil {
 			log.Warningln(err)
 			break
 		}
-		switch proto {
+		switch httpReq.proto {
 		case PROT_HTTP:
 			// plain http
-			c.mux.HandleRequest("HTTP", pbConn, target)
+			c.mux.HandleRequest("HTTP", pbConn, httpReq.target)
 		case PROT_HTTP_T:
 			// http tunnel
-			c.mux.HandleRequest("HTTP/T", conn, target)
+			c.mux.HandleRequest("HTTP/T", conn, httpReq.target)
 		case PROT_LOCAL:
 			// target is requestUri
-			c.localServlet(conn, target)
+			c.localServlet(conn, httpReq)
 		}
 		done = true
+
 	default:
 		log.Warningln("Unrecognized request from", conn.RemoteAddr())
 		time.Sleep(REST_INTERVAL)
 	}
+
 	// client setSeed at every 32 req
 	if reqNum&0x1f == 0x1f {
 		myRand.setSeed(0)
