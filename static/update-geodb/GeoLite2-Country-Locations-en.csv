@@ -161,7 +161,7 @@ geoname_id,locale_code,continent_code,continent_name,country_iso_code,country_na
 3042225,en,EU,Europe,IM,"Isle of Man"
 3042362,en,EU,Europe,GG,Guernsey
 3057568,en,EU,Europe,SK,"Slovak Republic"
-3077311,en,EU,Europe,CZ,"Czech Republic"
+3077311,en,EU,Europe,CZ,Czechia
 3144096,en,EU,Europe,NO,Norway
 3164670,en,EU,Europe,VA,"Vatican City"
 3168068,en,EU,Europe,SM,"San Marino"
